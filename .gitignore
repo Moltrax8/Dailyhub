@@ -1,0 +1,27 @@
+# ─── Android / Kotlin ───────────────────────────────────────────────────────
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+
+# Secrets
+local.properties
+app/google-services.json
+
+# Signing
+*.jks
+*.keystore
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+Thumbs.db
+desktop.ini
+*.log

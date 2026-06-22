@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PersonalNoteApp</string>
+    <string name="notification_channel_tasks">Task Reminders</string>
+    <string name="notification_channel_tasks_desc">Due-time alerts for tasks</string>
+    <string name="widget_description">Shows your pending tasks</string>
+</resources>
