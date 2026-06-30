@@ -32,7 +32,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Inject secrets as BuildConfig fields
-        buildConfigField("String", "GEMINI_API_KEY",          "\"${localProp("GEMINI_API_KEY")}\"")
         buildConfigField("String", "EXERCISEDB_KEY",          "\"${localProp("EXERCISEDB_KEY")}\"")
         buildConfigField("String", "DRIVE_FOLDER_NAME",       "\"${localProp("DRIVE_FOLDER_NAME").ifEmpty { "PersonalNoteAppBackup" }}\"")
         buildConfigField("String", "DRIVE_SCOPE",             "\"${localProp("DRIVE_SCOPE").ifEmpty { "https://www.googleapis.com/auth/drive.appdata" }}\"")
@@ -40,8 +39,21 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
+    signingConfigs {
+        create("release") {
+            val storeFilePath = localProp("RELEASE_STORE_FILE")
+            if (storeFilePath.isNotEmpty()) {
+                storeFile = rootProject.file(storeFilePath)
+                storePassword = localProp("RELEASE_STORE_PASSWORD")
+                keyAlias = localProp("RELEASE_KEY_ALIAS")
+                keyPassword = localProp("RELEASE_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -117,9 +129,6 @@ dependencies {
     // Google Sign-In
     implementation(libs.play.services.auth)
 
-    // Gemini AI
-    implementation(libs.google.generativeai)
-
     // WorkManager
     implementation(libs.work.runtime.ktx)
 
@@ -129,9 +138,17 @@ dependencies {
 
     // Coil
     implementation(libs.coil.compose)
+    implementation(libs.coil.gif)
+
+    // Media3 ExoPlayer (egzersiz demo videoları)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
 
     // Security (token storage)
     implementation(libs.security.crypto)
+
+    // Drag-and-drop reorderable lists
+    implementation(libs.reorderable)
 
     // Testing
     testImplementation(libs.junit)

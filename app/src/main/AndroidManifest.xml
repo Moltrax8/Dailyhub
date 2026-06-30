@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -8,6 +9,8 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Galeri seçimi modern Photo Picker (PickVisualMedia) ile yapılır; bu izin gerektirmez.
+         Aşağıdaki medya izinleri yalnızca olası doğrudan MediaStore erişimleri için tutulur. -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
@@ -54,6 +57,32 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/task_widget_info" />
         </receiver>
+
+        <!-- Widget'tan çark butonuyla açılan görev seçme ekranı. Saydam, ana uygulamadan ayrı bir
+             task'ta (taskAffinity boş) çalışır; recents'te görünmez. Böylece ana uygulama açılmaz ve
+             kapatıldığında doğrudan ana ekrana dönülür. Zorunlu kurulum kaldırıldığı için
+             APPWIDGET_CONFIGURE intent-filter'ı yoktur; yalnızca açık intent ile başlatılır. -->
+        <activity
+            android:name=".widget.TaskWidgetConfigActivity"
+            android:exported="false"
+            android:theme="@style/Theme.PersonalNoteApp.WidgetConfig"
+            android:taskAffinity=""
+            android:excludeFromRecents="true" />
+
+        <!-- Photo Picker backport: Android 11 ve altındaki cihazlarda Google Play hizmetleri
+             üzerinden modern Photo Picker modülünün yüklenmesini tetikler. -->
+        <service
+            android:name="com.google.android.gms.metadata.ModuleDependencies"
+            android:enabled="false"
+            android:exported="false"
+            tools:ignore="MissingClass">
+            <intent-filter>
+                <action android:name="com.google.android.gms.metadata.MODULE_DEPENDENCIES" />
+            </intent-filter>
+            <meta-data
+                android:name="photopicker_activity:0:required"
+                android:value="" />
+        </service>
 
         <!-- Boot completed for notification reschedule -->
         <receiver
