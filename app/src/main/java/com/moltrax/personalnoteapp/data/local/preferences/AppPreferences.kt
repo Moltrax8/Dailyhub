@@ -21,22 +21,36 @@ class AppPreferences @Inject constructor(@ApplicationContext private val context
 
     private object Keys {
         val THEME_MODE          = stringPreferencesKey("theme_mode")
-        val GEMINI_API_KEY      = stringPreferencesKey("gemini_api_key")
+        val LANGUAGE            = stringPreferencesKey("language")           // "tr" | "en"
         val REMINDER_MINUTES    = intPreferencesKey("reminder_minutes")
+        val SYSTEM_ALERTS       = booleanPreferencesKey("system_alerts_enabled") // Sistem uyarıları (varsayılan açık)
         val IS_SIGNED_IN        = booleanPreferencesKey("is_signed_in")
         val DRIVE_FILE_ID       = stringPreferencesKey("drive_file_id")
-        val DRIVE_ETAG          = stringPreferencesKey("drive_etag")
         val LAST_SYNC_AT        = stringPreferencesKey("last_sync_at")
+        val BIRTH_DATE          = stringPreferencesKey("birth_date")        // ISO "yyyy-MM-dd"
+        val BIRTHDAY_SHOWN_ON   = stringPreferencesKey("birthday_shown_on") // ISO "yyyy-MM-dd"
+
+        // Kullanıcının elle düzenlediği görünen ad (Google hesabı adını geçersiz kılar). Boşsa hesap adı kullanılır.
+        val DISPLAY_NAME        = stringPreferencesKey("display_name")
+
+        // Spor görevi tamamlama ekranında girilen (henüz onaylanmamış) set/ağırlık taslağı. Görev
+        // id'sine göre JSON haritası; ekran kapansa/uygulama kapansa bile veri kaybolmasın diye saklanır.
+        val WORKOUT_DRAFTS      = stringPreferencesKey("workout_drafts")
     }
 
     val themeMode: Flow<String> = context.dataStore.data.map { it[Keys.THEME_MODE] ?: "system" }
-    suspend fun setThemeMode(mode: String) = context.dataStore.edit { it[Keys.THEME_MODE] = mode }
 
-    val geminiApiKey: Flow<String> = context.dataStore.data.map { it[Keys.GEMINI_API_KEY] ?: "" }
-    suspend fun setGeminiApiKey(key: String) = context.dataStore.edit { it[Keys.GEMINI_API_KEY] = key }
+    // Uygulama dili — varsayılan "en" (İngilizce). Seçim DataStore'da kalıcı tutulur; uygulama
+    // yeniden açıldığında en son seçilen dil yüklenir. Anlık geçiş için kök composition bu akışı dinler.
+    val language: Flow<String> = context.dataStore.data.map { it[Keys.LANGUAGE] ?: "en" }
+    suspend fun setLanguage(code: String) = context.dataStore.edit { it[Keys.LANGUAGE] = code }
 
     val reminderMinutes: Flow<Int> = context.dataStore.data.map { it[Keys.REMINDER_MINUTES] ?: 60 }
     suspend fun setReminderMinutes(m: Int) = context.dataStore.edit { it[Keys.REMINDER_MINUTES] = m }
+
+    // Görev bitiş (deadline) hatırlatma bildirimleri. Varsayılan: açık.
+    val systemAlertsEnabled: Flow<Boolean> = context.dataStore.data.map { it[Keys.SYSTEM_ALERTS] ?: true }
+    suspend fun setSystemAlertsEnabled(v: Boolean) = context.dataStore.edit { it[Keys.SYSTEM_ALERTS] = v }
 
     val isSignedIn: Flow<Boolean> = context.dataStore.data.map { it[Keys.IS_SIGNED_IN] ?: false }
     suspend fun setSignedIn(v: Boolean) = context.dataStore.edit { it[Keys.IS_SIGNED_IN] = v }
@@ -46,13 +60,31 @@ class AppPreferences @Inject constructor(@ApplicationContext private val context
         if (id == null) it.remove(Keys.DRIVE_FILE_ID) else it[Keys.DRIVE_FILE_ID] = id
     }
 
-    val driveEtag: Flow<String?> = context.dataStore.data.map { it[Keys.DRIVE_ETAG] }
-    suspend fun setDriveEtag(etag: String?) = context.dataStore.edit {
-        if (etag == null) it.remove(Keys.DRIVE_ETAG) else it[Keys.DRIVE_ETAG] = etag
-    }
-
     val lastSyncAt: Flow<String?> = context.dataStore.data.map { it[Keys.LAST_SYNC_AT] }
     suspend fun setLastSyncAt(iso: String?) = context.dataStore.edit {
         if (iso == null) it.remove(Keys.LAST_SYNC_AT) else it[Keys.LAST_SYNC_AT] = iso
+    }
+
+    // Doğum tarihi — ISO "yyyy-MM-dd" biçiminde saklanır
+    val birthDate: Flow<String?> = context.dataStore.data.map { it[Keys.BIRTH_DATE] }
+    suspend fun setBirthDate(iso: String?) = context.dataStore.edit {
+        if (iso == null) it.remove(Keys.BIRTH_DATE) else it[Keys.BIRTH_DATE] = iso
+    }
+
+    // Doğum günü kutlamasının en son gösterildiği gün — günde bir kez gösterimi sağlamak için
+    val birthdayShownOn: Flow<String?> = context.dataStore.data.map { it[Keys.BIRTHDAY_SHOWN_ON] }
+    suspend fun setBirthdayShownOn(iso: String) = context.dataStore.edit { it[Keys.BIRTHDAY_SHOWN_ON] = iso }
+
+    // Kullanıcının elle düzenlediği görünen ad; ayarlanmamış/boşsa null (Google hesabı adına düşülür).
+    val displayName: Flow<String?> = context.dataStore.data.map { it[Keys.DISPLAY_NAME]?.takeIf { n -> n.isNotBlank() } }
+    suspend fun setDisplayName(name: String?) = context.dataStore.edit {
+        val trimmed = name?.trim().orEmpty()
+        if (trimmed.isEmpty()) it.remove(Keys.DISPLAY_NAME) else it[Keys.DISPLAY_NAME] = trimmed
+    }
+
+    // Spor görevi tamamlama taslağı (görev id → set/ağırlık girişleri) JSON olarak saklanır.
+    val workoutDrafts: Flow<String?> = context.dataStore.data.map { it[Keys.WORKOUT_DRAFTS] }
+    suspend fun setWorkoutDrafts(json: String?) = context.dataStore.edit {
+        if (json.isNullOrBlank()) it.remove(Keys.WORKOUT_DRAFTS) else it[Keys.WORKOUT_DRAFTS] = json
     }
 }

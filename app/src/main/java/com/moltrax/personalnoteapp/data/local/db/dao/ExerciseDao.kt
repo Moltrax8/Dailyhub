@@ -14,6 +14,13 @@ interface ExerciseDao {
     @Upsert suspend fun upsert(exercise: ExerciseEntity)
     @Upsert suspend fun upsertAll(exercises: List<ExerciseEntity>)
 
+    /** Önbellekteki tüm hareketler — yetim (artık hiçbir antrenmanda kullanılmayan) medya temizliği için. */
+    @Query("SELECT * FROM exercises")
+    suspend fun getAll(): List<ExerciseEntity>
+
+    @Query("DELETE FROM exercises WHERE id = :id")
+    suspend fun deleteById(id: String)
+
     @Query("SELECT * FROM exercises WHERE name LIKE '%' || :q || '%' OR bodyPart LIKE '%' || :q || '%' ORDER BY name")
     suspend fun search(q: String): List<ExerciseEntity>
 

@@ -8,10 +8,10 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TaskDao {
-    @Query("SELECT * FROM tasks ORDER BY createdAt DESC")
+    @Query("SELECT * FROM tasks ORDER BY sortOrder ASC, createdAt DESC")
     fun observeAll(): Flow<List<TaskEntity>>
 
-    @Query("SELECT * FROM tasks ORDER BY createdAt DESC")
+    @Query("SELECT * FROM tasks ORDER BY sortOrder ASC, createdAt DESC")
     suspend fun getAll(): List<TaskEntity>
 
     @Query("SELECT * FROM tasks WHERE id = :id")
@@ -28,4 +28,12 @@ interface TaskDao {
 
     @Query("DELETE FROM tasks")
     suspend fun deleteAll()
+
+    // Kategori yeniden adlandırıldığında: ilgili görevleri yeni ada taşı (sync için updatedAt'i de tazele)
+    @Query("UPDATE tasks SET category = :newName, updatedAt = :now WHERE category = :oldName")
+    suspend fun reassignCategory(oldName: String, newName: String, now: Long)
+
+    // Kategori silindiğinde: bağlı görevlerin kategorisini boşalt
+    @Query("UPDATE tasks SET category = NULL, updatedAt = :now WHERE category = :name")
+    suspend fun clearCategory(name: String, now: Long)
 }

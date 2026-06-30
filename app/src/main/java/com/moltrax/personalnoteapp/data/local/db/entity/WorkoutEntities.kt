@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.moltrax.personalnoteapp.domain.model.ExerciseType
 import com.moltrax.personalnoteapp.domain.model.PlannedSet
 import com.moltrax.personalnoteapp.domain.model.Workout
 import com.moltrax.personalnoteapp.domain.model.WorkoutExercise
@@ -18,6 +19,9 @@ data class WorkoutGroupEntity(
     val name: String,
     val currentIndex: Int,
     val createdAt: Long,
+    // Senkronizasyon LWW zaman damgası + silme mezar taşı (migration v14→v15 ile eklendi).
+    val updatedAt: Long = 0L,
+    val isDeleted: Boolean = false,
 )
 
 @Entity(
@@ -56,13 +60,17 @@ data class WorkoutExerciseEntity(
     val exerciseName: String,
     val plannedSetsJson: String,
     val orderIndex: Int,
+    /** ExerciseType.name; eski kayıtlarda migration ile "WEIGHTLIFTING" varsayılır. */
+    val type: String = ExerciseType.WEIGHTLIFTING.name,
 )
 
 @Serializable
 private data class PlannedSetJson(
-    val reps: Int,
+    val reps: Int = 0,
     val weightKg: Double? = null,
     val durationSeconds: Int? = null,
+    val steps: Int? = null,
+    val distanceMeters: Double? = null,
 )
 
 private val json = Json { ignoreUnknownKeys = true }
@@ -72,8 +80,9 @@ fun WorkoutExerciseEntity.toDomain() = WorkoutExercise(
     exerciseId = exerciseId,
     exerciseName = exerciseName,
     plannedSets = json.decodeFromString<List<PlannedSetJson>>(plannedSetsJson)
-        .map { PlannedSet(it.reps, it.weightKg, it.durationSeconds) },
+        .map { PlannedSet(it.reps, it.weightKg, it.durationSeconds, it.steps, it.distanceMeters) },
     orderIndex = orderIndex,
+    type = ExerciseType.fromName(type),
 )
 
 fun WorkoutExercise.toEntity(workoutId: String) = WorkoutExerciseEntity(
@@ -82,9 +91,10 @@ fun WorkoutExercise.toEntity(workoutId: String) = WorkoutExerciseEntity(
     exerciseId = exerciseId,
     exerciseName = exerciseName,
     plannedSetsJson = json.encodeToString(
-        plannedSets.map { PlannedSetJson(it.reps, it.weightKg, it.durationSeconds) }
+        plannedSets.map { PlannedSetJson(it.reps, it.weightKg, it.durationSeconds, it.steps, it.distanceMeters) }
     ),
     orderIndex = orderIndex,
+    type = type.name,
 )
 
 fun WorkoutGroupEntity.toDomain(workouts: List<Workout>) = WorkoutGroup(
@@ -93,6 +103,9 @@ fun WorkoutGroupEntity.toDomain(workouts: List<Workout>) = WorkoutGroup(
     workouts = workouts,
     currentIndex = currentIndex,
     createdAt = createdAt,
+    // Eski kayıtlarda updatedAt 0 olabilir; createdAt'a düşerek geçerli bir LWW tabanı sağla.
+    updatedAt = if (updatedAt > 0L) updatedAt else createdAt,
+    isDeleted = isDeleted,
 )
 
 fun WorkoutGroup.toEntity() = WorkoutGroupEntity(
@@ -100,6 +113,8 @@ fun WorkoutGroup.toEntity() = WorkoutGroupEntity(
     name = name,
     currentIndex = currentIndex,
     createdAt = createdAt,
+    updatedAt = updatedAt,
+    isDeleted = isDeleted,
 )
 
 fun WorkoutEntity.toDomain(exercises: List<WorkoutExercise>) = Workout(

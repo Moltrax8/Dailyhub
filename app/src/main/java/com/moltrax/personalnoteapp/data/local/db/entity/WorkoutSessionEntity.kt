@@ -2,6 +2,7 @@ package com.moltrax.personalnoteapp.data.local.db.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.moltrax.personalnoteapp.domain.model.ExerciseType
 import com.moltrax.personalnoteapp.domain.model.LoggedExercise
 import com.moltrax.personalnoteapp.domain.model.LoggedSet
 import com.moltrax.personalnoteapp.domain.model.WorkoutSession
@@ -17,23 +18,42 @@ data class WorkoutSessionEntity(
     val startedAt: Long,
     val completedAt: Long?,
     val loggedExercisesJson: String,
+    val taskId: String? = null,
 )
 
 @Serializable
-private data class LoggedSetJson(val reps: Int, val weightKg: Double?, val durationSeconds: Int?, val completedAt: Long)
+private data class LoggedSetJson(
+    val reps: Int = 0,
+    val weightKg: Double? = null,
+    val durationSeconds: Int? = null,
+    val steps: Int? = null,
+    val distanceMeters: Double? = null,
+    val completedAt: Long = 0L,
+)
 
 @Serializable
-private data class LoggedExerciseJson(val exerciseId: String, val exerciseName: String, val sets: List<LoggedSetJson>)
+private data class LoggedExerciseJson(
+    val exerciseId: String,
+    val exerciseName: String,
+    val sets: List<LoggedSetJson>,
+    val type: String = ExerciseType.WEIGHTLIFTING.name,
+)
 
 private val json = Json { ignoreUnknownKeys = true }
 
 fun WorkoutSessionEntity.toDomain(): WorkoutSession {
     val exercises = json.decodeFromString<List<LoggedExerciseJson>>(loggedExercisesJson)
         .map { ex ->
-            LoggedExercise(ex.exerciseId, ex.exerciseName,
-                ex.sets.map { LoggedSet(it.reps, it.weightKg, it.durationSeconds, it.completedAt) })
+            LoggedExercise(
+                exerciseId = ex.exerciseId,
+                exerciseName = ex.exerciseName,
+                sets = ex.sets.map {
+                    LoggedSet(it.reps, it.weightKg, it.durationSeconds, it.steps, it.distanceMeters, it.completedAt)
+                },
+                type = ExerciseType.fromName(ex.type),
+            )
         }
-    return WorkoutSession(id, workoutId, workoutName, startedAt, completedAt, exercises)
+    return WorkoutSession(id, workoutId, workoutName, startedAt, completedAt, exercises, taskId)
 }
 
 fun WorkoutSession.toEntity() = WorkoutSessionEntity(
@@ -43,7 +63,14 @@ fun WorkoutSession.toEntity() = WorkoutSessionEntity(
     startedAt = startedAt,
     completedAt = completedAt,
     loggedExercisesJson = json.encodeToString(loggedExercises.map { ex ->
-        LoggedExerciseJson(ex.exerciseId, ex.exerciseName,
-            ex.sets.map { LoggedSetJson(it.reps, it.weightKg, it.durationSeconds, it.completedAt) })
+        LoggedExerciseJson(
+            exerciseId = ex.exerciseId,
+            exerciseName = ex.exerciseName,
+            sets = ex.sets.map {
+                LoggedSetJson(it.reps, it.weightKg, it.durationSeconds, it.steps, it.distanceMeters, it.completedAt)
+            },
+            type = ex.type.name,
+        )
     }),
+    taskId = taskId,
 )

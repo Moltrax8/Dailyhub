@@ -13,17 +13,58 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface WorkoutDao {
 
-    // Groups
-    @Query("SELECT * FROM workout_groups ORDER BY createdAt DESC")
+    // Groups — görünür sorgular mezar taşlarını (isDeleted = 1) hariç tutar.
+    @Query("SELECT * FROM workout_groups WHERE isDeleted = 0 ORDER BY createdAt DESC")
     fun observeGroups(): Flow<List<WorkoutGroupEntity>>
 
+    @Query("SELECT * FROM workout_groups WHERE isDeleted = 0 ORDER BY createdAt DESC")
+    suspend fun getAllGroups(): List<WorkoutGroupEntity>
+
+    /** Senkronizasyon için TÜM gruplar — silinmiş (mezar taşı) kayıtlar dahil. */
+    @Query("SELECT * FROM workout_groups ORDER BY createdAt DESC")
+    suspend fun getAllGroupsRaw(): List<WorkoutGroupEntity>
+
     @Upsert suspend fun upsertGroup(group: WorkoutGroupEntity)
-    @Query("DELETE FROM workout_groups WHERE id = :id")
-    suspend fun deleteGroup(id: String)
+
+    /**
+     * Yumuşak silme (mezar taşı): grup kaydı saklanır ama isDeleted=1 + updatedAt güncellenir.
+     * Alt antrenman/hareket kayıtları ayrıca temizlenir (silinen grubun çocuğu kalmaz).
+     */
+    @Transaction
+    suspend fun softDeleteGroup(id: String, now: Long) {
+        markGroupDeleted(id, now)
+        deleteWorkoutsForGroup(id)
+    }
+
+    @Query("UPDATE workout_groups SET isDeleted = 1, updatedAt = :now WHERE id = :id")
+    suspend fun markGroupDeleted(id: String, now: Long)
+
+    @Query("DELETE FROM workout_groups")
+    suspend fun deleteAllGroups()
+
+    /**
+     * Grubu ve tüm alt kayıtlarını (workout + exercise) tek bir transaction içinde değiştirir.
+     * Atomik olduğu için reaktif Flow yalnızca son tutarlı durumu yayar (titreme/ara durum olmaz).
+     * Eski workout'lar silindiğinde CASCADE ile ilgili workout_exercises kayıtları da temizlenir.
+     */
+    @Transaction
+    suspend fun upsertGroupWithChildren(
+        group: WorkoutGroupEntity,
+        workouts: List<WorkoutEntity>,
+        exercises: List<WorkoutExerciseEntity>,
+    ) {
+        upsertGroup(group)
+        deleteWorkoutsForGroup(group.id)
+        upsertWorkouts(workouts)
+        upsertWorkoutExercises(exercises)
+    }
 
     // Workouts
     @Query("SELECT * FROM workouts WHERE groupId = :groupId ORDER BY orderIndex")
     suspend fun getWorkoutsForGroup(groupId: String): List<WorkoutEntity>
+
+    @Query("SELECT * FROM workouts ORDER BY orderIndex")
+    fun observeAllWorkouts(): Flow<List<WorkoutEntity>>
 
     @Upsert suspend fun upsertWorkout(workout: WorkoutEntity)
     @Upsert suspend fun upsertWorkouts(workouts: List<WorkoutEntity>)
@@ -34,13 +75,31 @@ interface WorkoutDao {
     @Query("SELECT * FROM workout_exercises WHERE workoutId = :workoutId ORDER BY orderIndex")
     suspend fun getExercisesForWorkout(workoutId: String): List<WorkoutExerciseEntity>
 
+    @Query("SELECT * FROM workout_exercises ORDER BY orderIndex")
+    fun observeAllWorkoutExercises(): Flow<List<WorkoutExerciseEntity>>
+
+    /** Halen herhangi bir antrenmanda kullanılan benzersiz hareket id'leri (yetim medya temizliği için). */
+    @Query("SELECT DISTINCT exerciseId FROM workout_exercises")
+    suspend fun getReferencedExerciseIds(): List<String>
+
     @Upsert suspend fun upsertWorkoutExercise(exercise: WorkoutExerciseEntity)
     @Upsert suspend fun upsertWorkoutExercises(exercises: List<WorkoutExerciseEntity>)
-    @Query("DELETE FROM workout_exercises WHERE workoutId = :workoutId")
-    suspend fun deleteExercisesForWorkout(workoutId: String)
 
     // Sessions
     @Upsert suspend fun upsertSession(session: WorkoutSessionEntity)
+    @Upsert suspend fun upsertSessions(sessions: List<WorkoutSessionEntity>)
     @Query("SELECT * FROM workout_sessions ORDER BY startedAt DESC")
     suspend fun getSessions(): List<WorkoutSessionEntity>
+
+    @Query("SELECT * FROM workout_sessions WHERE id = :id")
+    suspend fun getSessionById(id: String): WorkoutSessionEntity?
+
+    /** Bir spor görevine bağlı en son tamamlanmış seans (tamamlanan görevin özetini açmak için). */
+    @Query("SELECT * FROM workout_sessions WHERE taskId = :taskId ORDER BY startedAt DESC LIMIT 1")
+    suspend fun getLatestSessionForTask(taskId: String): WorkoutSessionEntity?
+
+    @Query("DELETE FROM workout_sessions WHERE id = :id")
+    suspend fun deleteSession(id: String)
+    @Query("DELETE FROM workout_sessions")
+    suspend fun deleteAllSessions()
 }
