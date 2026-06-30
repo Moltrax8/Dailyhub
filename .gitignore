@@ -4,7 +4,7 @@
 /local.properties
 /.idea
 .DS_Store
-/build
+build/
 /captures
 .externalNativeBuild
 .cxx
@@ -12,6 +12,21 @@
 # Secrets
 local.properties
 app/google-services.json
+
+# Memory / heap dumps (can be hundreds of MB)
+*.hprof
+
+# ─── Flutter remnants (project was migrated from Flutter to native Android) ──
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+.packages
+.pub-cache/
+.pub/
+.env
+.env.*
+!.env.example
 
 # Signing
 *.jks
