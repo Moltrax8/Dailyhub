@@ -14,12 +14,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.moltrax.personalnoteapp.R
 import com.moltrax.personalnoteapp.ui.theme.AppColors
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,7 +41,7 @@ fun FocusScreen(nav: NavController, taskId: String, vm: FocusTimerViewModel = hi
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(state.task?.title ?: "Odak") },
+                title = { Text(state.task?.title ?: stringResource(R.string.focus_title)) },
                 navigationIcon = { IconButton(onClick = { vm.pause(); nav.popBackStack() }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
             )

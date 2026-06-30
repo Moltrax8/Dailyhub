@@ -1,9 +1,7 @@
 package com.moltrax.personalnoteapp.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
@@ -21,25 +19,17 @@ private val DarkColorScheme = darkColorScheme(
     error            = AppColors.Error,
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary          = AppColors.Accent,
-    onPrimary        = Color.White,
-    background       = Color(0xFFF5F5FA),
-    surface          = Color.White,
-    surfaceVariant   = Color(0xFFEEEEF5),
-    onBackground     = Color(0xFF1A1A24),
-    onSurface        = Color(0xFF1A1A24),
-    onSurfaceVariant = Color(0xFF666678),
-    outline          = Color(0xFFDDDDE8),
-)
-
+/**
+ * Uygulama TEK bir tutarlı karanlık/neon tema kullanır (açık tema yoktur). [themeMode] parametresi
+ * geriye dönük uyumluluk için imzada korunur ama yok sayılır — tüm ekranlar her zaman koyu temada.
+ */
 @Composable
 fun AppTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: String = "dark",
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(
-        colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
+        colorScheme = DarkColorScheme,
         content     = content,
     )
 }

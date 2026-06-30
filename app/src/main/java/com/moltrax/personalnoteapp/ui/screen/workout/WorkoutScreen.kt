@@ -4,16 +4,17 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.moltrax.personalnoteapp.R
 import com.moltrax.personalnoteapp.domain.model.WorkoutGroup
 import com.moltrax.personalnoteapp.ui.navigation.WorkoutDetail
 import com.moltrax.personalnoteapp.ui.screen.home.BottomNavBar
@@ -28,22 +29,22 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutViewModel = hiltViewModel()) {
     if (showAddDialog) {
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-            title = { Text("Yeni Program") },
+            title = { Text(stringResource(R.string.workout_new_program)) },
             text = {
-                OutlinedTextField(newGroupName, { newGroupName = it }, label = { Text("Program adı") },
+                OutlinedTextField(newGroupName, { newGroupName = it }, label = { Text(stringResource(R.string.workout_program_name)) },
                     modifier = Modifier.fillMaxWidth())
             },
             confirmButton = {
                 TextButton(onClick = {
                     if (newGroupName.isNotBlank()) { vm.addGroup(newGroupName); newGroupName = ""; showAddDialog = false }
-                }) { Text("Ekle") }
+                }) { Text(stringResource(R.string.action_add)) }
             },
-            dismissButton = { TextButton(onClick = { showAddDialog = false }) { Text("İptal") } },
+            dismissButton = { TextButton(onClick = { showAddDialog = false }) { Text(stringResource(R.string.action_cancel)) } },
         )
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Antrenmanlarım") }) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.workout_my_workouts)) }) },
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddDialog = true }) { Icon(Icons.Default.Add, null) }
         },
@@ -57,7 +58,7 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutViewModel = hiltViewModel()) {
             if (groups.isEmpty()) {
                 item {
                     Box(Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Henüz program yok", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.workout_no_programs), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -73,7 +74,8 @@ private fun GroupCard(group: WorkoutGroup, onTap: () -> Unit, onDelete: () -> Un
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(group.name, style = MaterialTheme.typography.titleMedium)
-                Text("${group.workouts.size} antrenman", style = MaterialTheme.typography.bodySmall,
+                Text(stringResource(R.string.workout_count, group.workouts.size),
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, null) }

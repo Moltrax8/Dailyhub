@@ -1,15 +1,23 @@
 package com.moltrax.personalnoteapp.ui.screen.focus
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.moltrax.personalnoteapp.data.local.preferences.AppPreferences
 import com.moltrax.personalnoteapp.domain.model.Task
+import com.moltrax.personalnoteapp.domain.model.withCompletion
+import com.moltrax.personalnoteapp.domain.repository.SyncRepository
 import com.moltrax.personalnoteapp.domain.repository.TaskRepository
+import com.moltrax.personalnoteapp.service.NotificationService
+import com.moltrax.personalnoteapp.widget.TaskWidget
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -28,7 +36,11 @@ data class FocusState(
 
 @HiltViewModel
 class FocusTimerViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val taskRepo: TaskRepository,
+    private val notifService: NotificationService,
+    private val syncRepo: SyncRepository,
+    private val prefs: AppPreferences,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(FocusState())
@@ -70,9 +82,15 @@ class FocusTimerViewModel @Inject constructor(
 
     private suspend fun markDone() {
         val task = _state.value.task ?: return
-        taskRepo.upsert(
-            task.copy(isDone = true, completedAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis())
-        )
+        // Tekrarlayan görevi ileri sar, normal görevi kapat (ana listeyle tutarlı)
+        val result = task.withCompletion()
+        taskRepo.upsert(result)
+        notifService.cancelReminder(task.id)
+        if (!result.isDone && prefs.systemAlertsEnabled.first()) {
+            notifService.scheduleReminder(result, prefs.reminderMinutes.first())
+        }
+        syncRepo.pushToDrive()
+        TaskWidget.requestUpdate(context)
     }
 
     override fun onCleared() { timerJob?.cancel(); super.onCleared() }
