@@ -4,6 +4,7 @@ import android.accounts.Account
 import android.content.Context
 import android.content.Intent
 import com.google.android.gms.auth.GoogleAuthUtil
+import com.google.android.gms.auth.UserRecoverableAuthException
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -40,13 +41,36 @@ class DriveAuthService @Inject constructor(
         GoogleSignIn.hasPermissions(it, driveScope)
     } ?: false
 
+    // GoogleAuthUtil için scope string'i: "oauth2:<tam-scope-url>"
+    private val tokenScope = "oauth2:${BuildConfig.DRIVE_SCOPE}"
+
     suspend fun getAccessToken(account: Account): String = withContext(Dispatchers.IO) {
-        GoogleAuthUtil.getToken(context, account, "oauth2:${BuildConfig.DRIVE_SCOPE}")
+        GoogleAuthUtil.getToken(context, account, tokenScope)
     }
 
+    /**
+     * Geçerli erişim jetonunu döner. Giriş yapılmamışsa null döner; jeton alınırken hata
+     * oluşursa (izin gerekiyor, ağ, vb.) istisnayı YUKARI fırlatır — gerçek neden sessizce
+     * yutulmaz, böylece arayüzde gösterilebilir.
+     */
     suspend fun getFreshToken(): String? {
         val account = getLastSignedInAccount()?.account ?: return null
-        return runCatching { getAccessToken(account) }.getOrNull()
+        return getAccessToken(account)
+    }
+
+    /**
+     * Drive erişimi için kullanıcı onayı gerekiyorsa onay ekranını açacak Intent'i döner;
+     * onay zaten verilmişse null. Giriş akışında, sign-in sonrası çağrılır ki hassas
+     * `drive.appdata` izni mutlaka istensin.
+     */
+    suspend fun getConsentIntentOrNull(): Intent? = withContext(Dispatchers.IO) {
+        val account = getLastSignedInAccount()?.account ?: return@withContext null
+        try {
+            GoogleAuthUtil.getToken(context, account, tokenScope)
+            null
+        } catch (e: UserRecoverableAuthException) {
+            e.intent
+        }
     }
 
     suspend fun signOut() {

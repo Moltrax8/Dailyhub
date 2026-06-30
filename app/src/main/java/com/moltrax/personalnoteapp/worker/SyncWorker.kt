@@ -15,7 +15,7 @@ class SyncWorker @AssistedInject constructor(
     private val syncRepo: SyncRepository,
 ) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
-        return runCatching { syncRepo.pushToDrive(); Result.success() }
+        return runCatching { syncRepo.sync(); Result.success() }
             .getOrDefault(Result.retry())
     }
 }

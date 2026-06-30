@@ -21,6 +21,8 @@ class RescheduleNotificationsWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
+        // Sistem uyarıları kapalıysa hiçbir hatırlatma kurma.
+        if (!prefs.systemAlertsEnabled.first()) return Result.success()
         val minutes = prefs.reminderMinutes.first()
         taskRepo.getAll()
             .filter { !it.isDone && it.dueDate != null && it.dueDate > System.currentTimeMillis() }
