@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.moltrax.personalnoteapp.FeatureFlags
 import com.moltrax.personalnoteapp.R
 import com.moltrax.personalnoteapp.ui.AppViewModel
 import com.moltrax.personalnoteapp.ui.i18n.AppLanguage
@@ -135,41 +136,44 @@ fun SettingsScreen(nav: NavController, vm: SettingsViewModel = hiltViewModel()) 
                 ) { Text(stringResource(R.string.settings_notif_permission)) }
             }
 
-            // --- Senkronizasyon ---
-            SettingsSection(title = stringResource(R.string.settings_section_sync), icon = Icons.Filled.CloudSync) {
-                Text(
-                    lastSyncAt?.let { stringResource(R.string.settings_last_sync, it) }
-                        ?: stringResource(R.string.settings_never_synced),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(
-                        onClick = { vm.syncNow() },
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f),
-                    ) { Text(stringResource(R.string.settings_push)) }
-                    OutlinedButton(
-                        onClick = { vm.pullNow() },
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f),
-                    ) { Text(stringResource(R.string.settings_pull)) }
+            // --- Senkronizasyon + Hesap ---
+            // Drive sync şimdilik kapalı (bkz. FeatureFlags): giriş yapılmadığından
+            // yedekleme/çıkış bölümleri gizlenir. Bayrak açılınca geri gelir.
+            if (FeatureFlags.DRIVE_SYNC_ENABLED) {
+                SettingsSection(title = stringResource(R.string.settings_section_sync), icon = Icons.Filled.CloudSync) {
+                    Text(
+                        lastSyncAt?.let { stringResource(R.string.settings_last_sync, it) }
+                            ?: stringResource(R.string.settings_never_synced),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            onClick = { vm.syncNow() },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f),
+                        ) { Text(stringResource(R.string.settings_push)) }
+                        OutlinedButton(
+                            onClick = { vm.pullNow() },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f),
+                        ) { Text(stringResource(R.string.settings_pull)) }
+                    }
                 }
-            }
 
-            // --- Hesap ---
-            Button(
-                onClick = { vm.signOut { nav.navigate(Login) { popUpTo(0) { inclusive = true } } } },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Icon(Icons.Filled.Logout, contentDescription = null, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.settings_sign_out))
+                Button(
+                    onClick = { vm.signOut { nav.navigate(Login) { popUpTo(0) { inclusive = true } } } },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Filled.Logout, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.settings_sign_out))
+                }
+                Spacer(Modifier.height(8.dp))
             }
-            Spacer(Modifier.height(8.dp))
         }
     }
 }

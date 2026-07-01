@@ -23,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.moltrax.personalnoteapp.FeatureFlags
 import com.moltrax.personalnoteapp.MainActivity
 import com.moltrax.personalnoteapp.ui.SyncViewModel
 import com.moltrax.personalnoteapp.ui.components.SyncBanner
@@ -39,7 +40,8 @@ import com.moltrax.personalnoteapp.ui.screen.workout.WorkoutSummaryScreen
 
 @Composable
 fun AppNavHost(
-    startDestination: Any = Login,
+    // Drive sync kapalıyken giriş ekranını atla, doğrudan ana ekrandan başla.
+    startDestination: Any = if (FeatureFlags.DRIVE_SYNC_ENABLED) Login else Home,
     pendingWidgetAction: String? = null,
     pendingWidgetTaskId: String? = null,
     onWidgetActionConsumed: () -> Unit = {},
@@ -52,17 +54,19 @@ fun AppNavHost(
     // soğuk başlangıçtır; açılış senkronizasyonunu HomeViewModel.init zaten yapar, bu yüzden
     // yalnızca SONRAKİ ön plana gelişlerde tetikleriz (çift sync'i önler). Giriş yapılmamışsa
     // repository sessizce no-op döner.
-    val syncVm: SyncViewModel = hiltViewModel()
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        var firstStart = true
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_START) {
-                if (firstStart) firstStart = false else syncVm.syncSilent()
+    if (FeatureFlags.DRIVE_SYNC_ENABLED) {
+        val syncVm: SyncViewModel = hiltViewModel()
+        val lifecycleOwner = LocalLifecycleOwner.current
+        DisposableEffect(lifecycleOwner) {
+            var firstStart = true
+            val observer = LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_START) {
+                    if (firstStart) firstStart = false else syncVm.syncSilent()
+                }
             }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
         }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     // Widget'ın '+' butonu yeni görev ekranını açmak ister. Kullanıcı oturum açana (Home'a
@@ -85,7 +89,9 @@ fun AppNavHost(
             .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
     ) {
-        SyncBanner()
+        if (FeatureFlags.DRIVE_SYNC_ENABLED) {
+            SyncBanner()
+        }
 
         // Ekran geçişleri: varsayılan ~300 ms kaydır+solma yerine çok kısa (90 ms) bir solma.
         // Böylece sekme/ekran değişimi gözle anlık algılanır, gezinme "gecikmesiz" hissettirir.
