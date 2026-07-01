@@ -46,19 +46,24 @@ workout tracking and progress stats in one place. Built as a native Android app
 
 ## Setup
 
-1. Clone the repository and open it in Android Studio.
-2. Copy `local.properties.example` to `local.properties` and fill in the values
-   (this file is git-ignored and **must never be committed**):
+1. Clone the repository and open it in Android Studio. On first sync Android
+   Studio points Gradle at your installed SDK automatically by creating
+   `local.properties` with the correct `sdk.dir` — no manual step needed.
+
+2. For command-line builds (no Android Studio), create `local.properties` in the
+   project root and point it at your own Android SDK location. This file is
+   git-ignored and must never be committed:
 
    ```properties
-   sdk.dir=C:\\Users\\<user>\\AppData\\Local\\Android\\Sdk
-   GOOGLE_CLIENT_ID=your_web_client_id.apps.googleusercontent.com
-   DRIVE_FOLDER_NAME=DailyHubBackup
-   DRIVE_SCOPE=https://www.googleapis.com/auth/drive.appdata
+   # pick the line for your OS and set your own path
+   sdk.dir=C\:\\Users\\<you>\\AppData\\Local\\Android\\Sdk   # Windows
+   sdk.dir=/Users/<you>/Library/Android/sdk                  # macOS
+   sdk.dir=/home/<you>/Android/Sdk                           # Linux
    ```
 
-   With Drive sync disabled (the default) the Google values are optional — only
-   `sdk.dir` is required to build.
+   That is all you need for a default build. The `GOOGLE_CLIENT_ID` /
+   `DRIVE_*` values in `local.properties.example` are only required if you turn on
+   Google Drive sync (see [Enabling Google Drive sync](#enabling-google-drive-sync)).
 
 ## Building an APK from source
 
