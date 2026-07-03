@@ -88,3 +88,30 @@ app\build\outputs\apk\release\app-release.apk
 
 Copy it to your phone and open it to install (enable "install from unknown
 sources" if Android asks).
+
+## Build a debug APK (Windows)
+
+Quicker to build and needs **no keystore** — Gradle auto-signs it. Good for a
+friend who just wants to try the app without doing the signing setup above.
+
+```cmd
+gradlew.bat :app:assembleDebug
+```
+
+The APK lands here:
+
+```
+app\build\outputs\apk\debug\app-debug.apk
+```
+
+Install it the same way (copy to phone, open, allow unknown sources).
+
+## Debug vs release
+
+- **Debug** — no signing setup, but **not optimized**: bigger APK, no code
+  shrinking, slightly slower. Meant for quick testing.
+- **Release** — optimized: code shrinking / obfuscation (R8) is on, so the APK
+  is smaller and faster. This is the version to actually keep and update.
+
+> They are signed with different keys, so Android treats them as separate apps —
+> one can't update over the other. Pick one and stick with it.
