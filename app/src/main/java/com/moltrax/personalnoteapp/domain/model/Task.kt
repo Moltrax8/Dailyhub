@@ -50,8 +50,6 @@ data class Task(
         get() = if (subtasks.isEmpty()) 0f else doneSubtaskCount.toFloat() / subtasks.size
 }
 
-private const val DAY_MS = 24L * 60 * 60 * 1000
-
 /**
  * Tekrarlayan bir görev tamamlandığında taşınacağı BİR SONRAKİ bitiş zamanını hesaplar; görev
  * tekrarlamıyorsa veya geçerli bir biçim yoksa null döner. Daima en az bir döngü ileri gider ve
@@ -68,9 +66,9 @@ fun Task.nextRecurrenceDue(now: Long = System.currentTimeMillis()): Long? {
         RecurrenceType.INTERVAL, null -> {
             val step = intervalDays ?: 0
             if (step <= 0) return null
-            var d = base
-            do { d += step.toLong() * DAY_MS } while (d <= now)
-            d
+            // Takvim günü olarak ilerlet (sabit 24s katı DEĞİL): DST geçişlerinde bitiş saati
+            // kaymaz; DAILY/MONTHLY/WEEKLY ile aynı LocalDateTime tabanlı davranışı paylaşır.
+            advance(base, now) { it.plusDays(step.toLong()) }
         }
     }
 }

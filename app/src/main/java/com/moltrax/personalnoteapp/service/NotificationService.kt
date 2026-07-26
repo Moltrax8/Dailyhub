@@ -42,10 +42,15 @@ class NotificationService @Inject constructor(
         val fireAt    = if (triggerAt > now) triggerAt else due
         if (fireAt <= now) return
 
+        // Bildirim metni GERÇEKTEN kalan süreyi göstersin: hatırlatma penceresi zaten geçmişse
+        // (fireAt = due) bu 0 olur ("çok kısa" metni), aksi halde reminderMinutes. Böylece bitişte
+        // tetiklenen bir bildirim yanlışlıkla "1 saat kaldı" demez.
+        val minutesLeftAtFire = ((due - fireAt) / 60_000L).toInt()
+
         val notifIntent = Intent(context, NotificationBroadcastReceiver::class.java).apply {
             putExtra("task_id", task.id)
             putExtra("task_title", task.title)
-            putExtra("reminder_minutes", reminderMinutes)
+            putExtra("reminder_minutes", minutesLeftAtFire)
         }
         val pi = PendingIntent.getBroadcast(
             context,

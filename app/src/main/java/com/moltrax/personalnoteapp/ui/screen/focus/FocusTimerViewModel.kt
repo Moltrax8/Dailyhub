@@ -82,6 +82,12 @@ class FocusTimerViewModel @Inject constructor(
 
     private suspend fun markDone() {
         val task = _state.value.task ?: return
+        // Spora/programa linkli görevler odak zamanlayıcısıyla KAPATILMAZ. Doğru tamamlama akışı
+        // (set/tekrar/ağırlık girişi → WorkoutSession kaydı → programlı görevde gün rotasyonu) yalnızca
+        // ana ekrandaki tik ile çalışır. Odak sayacından kapatmak seansı kaydetmeden görevi bitirir ve
+        // program gününü ilerletmezdi (iki tamamlama yolu arasında tutarsızlık). Görev açık bırakılır;
+        // kullanıcı ana ekrandan tikleyip antrenmanı usulünce tamamlar.
+        if (task.linkedWorkoutId != null || task.linkedProgramId != null) return
         // Tekrarlayan görevi ileri sar, normal görevi kapat (ana listeyle tutarlı)
         val result = task.withCompletion()
         taskRepo.upsert(result)

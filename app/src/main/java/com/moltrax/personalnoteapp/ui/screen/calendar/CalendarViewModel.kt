@@ -48,7 +48,13 @@ fun Task.occursOn(date: LocalDate, zone: ZoneId = ZoneId.systemDefault()): Boole
             val days = recurrenceDaysOfWeek.ifEmpty { listOf(anchor.dayOfWeek.value) }
             date.dayOfWeek.value in days
         }
-        RecurrenceType.MONTHLY -> date.dayOfMonth == anchor.dayOfMonth
+        RecurrenceType.MONTHLY -> {
+            // Ayın son gününe kırp: 29/30/31'ine ayarlı bir görev, o günü olmayan aylarda (Şubat,
+            // 30 günlük aylar) ayın SON gününde görünür — böylece kısa aylarda kaybolmaz. Bu,
+            // tamamlama tarafındaki plusMonths kırpmasıyla (Task.nextRecurrenceDue) tutarlıdır.
+            val targetDay = minOf(anchor.dayOfMonth, date.lengthOfMonth())
+            date.dayOfMonth == targetDay
+        }
         RecurrenceType.INTERVAL, null -> {
             val step = intervalDays ?: return false
             if (step <= 0) false else ChronoUnit.DAYS.between(anchor, date) % step == 0L

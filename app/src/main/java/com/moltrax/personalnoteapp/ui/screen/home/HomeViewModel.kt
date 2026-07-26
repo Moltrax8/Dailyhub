@@ -285,8 +285,11 @@ class HomeViewModel @Inject constructor(
             val byId = master.associateBy { it.id }
             val displayedSet = displayedIds.toSet()
             val iter = displayedIds.iterator()
-            // Ana sırayı yeniden kur: görünür yuvalara yeni sırayı, gizlilere kendi id'sini koy
-            val newOrderIds = master.map { if (it.id in displayedSet) iter.next() else it.id }
+            // Ana sırayı yeniden kur: görünür yuvalara yeni sırayı, gizlilere kendi id'sini koy.
+            // iter.hasNext() koruması: sürükleme sırasında bir görev eşzamanlı silinip/eklenip master
+            // ile displayedIds arasındaki eşleşme bozulursa (ör. widget'tan tamamlama) NoSuchElement
+            // fırlatmak yerine öğe kendi id'sinde kalır.
+            val newOrderIds = master.map { if (it.id in displayedSet && iter.hasNext()) iter.next() else it.id }
 
             val now = System.currentTimeMillis()
             val changed = newOrderIds.mapIndexedNotNull { index, id ->
