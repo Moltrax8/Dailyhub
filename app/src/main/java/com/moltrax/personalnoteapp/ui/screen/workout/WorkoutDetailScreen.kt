@@ -1,6 +1,8 @@
 package com.moltrax.personalnoteapp.ui.screen.workout
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -274,7 +276,13 @@ private fun AddExerciseDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(if (hasSelection) R.string.workout_plan_values else R.string.workout_add_exercise_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Uzun egzersiz açıklaması + 180dp önizleme, diyalogun yüksekliğini aşınca set/tekrar/kg
+            // alanları alta itilip erişilemez hale geliyordu. İçeriği dikey kaydırılabilir yaparak
+            // her boyda tüm alanlara ulaşılmasını sağlıyoruz.
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 if (!hasSelection) {
                     // 1. Aşama: tip + arama / manuel ad
                     Text(stringResource(R.string.workout_type_manual), style = MaterialTheme.typography.labelMedium)
@@ -459,7 +467,11 @@ private fun EditExerciseDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.workout_edit_exercise_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // 180dp önizleme + alanlar diyalog yüksekliğini aşabildiğinden içerik kaydırılabilir.
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 Text(exercise.exerciseName, style = MaterialTheme.typography.titleSmall)
                 // Çevrimdışı demo videosu/GIF'i (indirilmişse lokal dosyadan, yoksa uzak URL'den).
                 if (!mediaSource.isNullOrBlank()) {
